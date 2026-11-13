@@ -4,12 +4,14 @@ import { fullName, sectionsFor, userInitials, useStore, type Section } from '../
 import { Dialog, Icon, Sheet } from '../components/ui';
 import MessagesSection from './sections/Messages';
 import MembersSection from './sections/Members';
+import PlaySection from './sections/Play';
 import BroadcastSection from './sections/Broadcast';
 import ManagementSection from './sections/Management';
 
 const META: Record<Section, { label: string; icon: string }> = {
   messages: { label: 'Messages', icon: 'chat' },
   members: { label: 'Membres', icon: 'group' },
+  play: { label: 'Jouer', icon: 'sports_esports' },
   broadcast: { label: 'Diffusion', icon: 'wifi_tethering' },
   management: { label: 'Gestion', icon: 'settings' },
 };
@@ -36,6 +38,7 @@ export default function Home() {
       <main className="scroll">
         {section === 'messages' && <MessagesSection />}
         {section === 'members' && <MembersSection />}
+        {section === 'play' && <PlaySection />}
         {section === 'broadcast' && <BroadcastSection />}
         {section === 'management' && <ManagementSection />}
       </main>

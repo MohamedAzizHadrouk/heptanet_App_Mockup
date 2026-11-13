@@ -32,7 +32,7 @@ export default function EmailCheck() {
         <div className="card soft">
           <Field icon="mail" type="email" value={email} onChange={setEmail} placeholder="Email" onEnter={check} />
           {error && <ErrorBox>{error}</ErrorBox>}
-          <button className="btn-primary" disabled={!valid || loading} onClick={check}>{loading ? <Spinner light /> : 'Vérifier'}</button>
+          <button className="btn-primary" disabled={!valid || loading} onClick={check}>{loading ? <span style={{ display: 'flex', alignItems: 'center', gap: 12 }}><Spinner light />Envoi du code…</span> : 'Vérifier et recevoir le code'}</button>
         </div>
         <p className="hint">Démo : essayez <b>nouveau@demo.heptanet</b></p>
       </div>

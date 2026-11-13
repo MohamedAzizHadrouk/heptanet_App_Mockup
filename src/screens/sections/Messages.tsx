@@ -34,7 +34,7 @@ export default function MessagesSection() {
         const lm = last(c);
         // Comme conversation_list_tile.dart : le badge "non lus" est désactivé dans l'app actuelle.
         const unread = 0;
-        const preview = !lm ? '' : lm.type === 'voice' ? '🎤 Message vocal' : lm.content;
+        const preview = !lm ? '' : lm.type === 'voice' ? '🎤 Message vocal' : lm.content; // une carte Duel affiche son titre
         return (
           <button key={c.id} className="conv" onClick={() => nav(`/chat/${c.id}`)}>
             <div className="av">

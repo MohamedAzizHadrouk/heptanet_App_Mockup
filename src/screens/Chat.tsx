@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { bubbleTime, fullName, initialsOf, separatorLabel, userInitials, useStore } from '../store';
 import { Dialog, Icon, Sheet, useToast } from '../components/ui';
 import type { Message } from '../data/types';
+import { useGame } from '../game/GameProvider';
 
 const fmtDur = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 
@@ -12,6 +13,7 @@ export default function Chat() {
   const toast = useToast();
   const id = Number(useParams().id);
   const { me, users, conversations, messages, typing, sendMessage, sendVoice, editMessage, deleteMessage, markAllRead } = useStore();
+  const { duels, createDuel } = useGame();
   const conv = conversations.find((c) => c.id === id);
   const list = useMemo(() => messages.filter((m) => m.conversationId === id), [messages, id]);
   const [text, setText] = useState('');
@@ -105,7 +107,18 @@ export default function Chat() {
                 <div className="bubble" onContextMenu={(e) => { if (mine) { e.preventDefault(); setMenu(m); } }}
                   onPointerDown={() => longPressStart(m)} onPointerUp={longPressEnd} onPointerLeave={longPressEnd}>
                   {!mine && <div className="sender">{fullName(sender)}</div>}
-                  {m.type === 'voice' ? <VoiceBubble seconds={m.durationSec ?? 0} url={m.audioUrl} /> : <div className="text">{m.content}</div>}
+                  {m.type === 'voice' ? <VoiceBubble seconds={m.durationSec ?? 0} url={m.audioUrl} />
+                    : m.type === 'duel' && m.card ? (
+                      <div className="duel-card">
+                        <b>{m.card.title}</b><span>{m.card.subtitle}</span>
+                        <button onClick={() => {
+                          const d = duels.find((x) => x.id === m.card!.duelId);
+                          if (m.card!.kind === 'result') nav(`/duel/${m.card!.duelId}/solutions`);
+                          else if (d && d.meId === me!.id) nav(`/duel/${d.id}`);
+                          else nav(`/duel/${createDuel({ mode: 'accepted', scope: { kind: 'libre' }, minutes: 5, oppId: m.senderId })}`);
+                        }}>{m.card.kind === 'result' ? 'Voir les solutions' : mine ? 'Voir le duel' : 'Accepter le défi'}</button>
+                      </div>
+                    ) : <div className="text">{m.content}</div>}
                   <div className="foot">
                     <span>{bubbleTime(m.sentAt)}{m.editedAt ? ' (edited)' : ''}</span>
                     {mine && <StatusIcon status={m.status} />}
@@ -147,6 +160,9 @@ export default function Chat() {
       )}
       {headMenu && (
         <Sheet onClose={() => setHeadMenu(false)}>
+          {conv.type === 'private' && other && (
+            <button className="menu-item" onClick={() => { setHeadMenu(false); nav(`/duel/${createDuel({ mode: 'friend', scope: { kind: 'libre' }, minutes: 5, oppId: other.id })}`); }}><Icon name="swords" />Défier en Duel Lean 4.0</button>
+          )}
           <button className="menu-item" onClick={() => { markAllRead(id); setHeadMenu(false); }}><Icon name="done_all" />Mark all as read</button>
           <button className="menu-item" onClick={() => setHeadMenu(false)}><Icon name="refresh" />Refresh</button>
           <button className="menu-item" onClick={() => setHeadMenu(false)}><Icon name="close" />Cancel</button>

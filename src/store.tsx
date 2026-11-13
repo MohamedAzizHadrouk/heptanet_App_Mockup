@@ -1,7 +1,7 @@
 // Serveur simulé – même comportement que lib/demo/demo_backend.dart (APK de démo).
 import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from 'react';
 import * as mock from './data/mock';
-import type { AuthorizedEmail, Conversation, Message, User } from './data/types';
+import type { AuthorizedEmail, Conversation, DuelCard, Message, User } from './data/types';
 
 const SESSION_KEY = 'heptanet-maquette-session';
 const readSession = () => { try { return Number(localStorage.getItem(SESSION_KEY)) || null; } catch { return null; } };
@@ -21,6 +21,8 @@ interface Store {
   resetPassword: (email: string, password: string) => void;
   sendMessage: (conversationId: number, content: string) => void;
   sendVoice: (conversationId: number, audioUrl: string, durationSec: number) => void;
+  /** Poste une carte Duel (invitation / résultat) dans une conversation, sans réponse automatique. */
+  sendCard: (conversationId: number, card: DuelCard, fromUserId?: number) => void;
   editMessage: (id: number, content: string) => void;
   deleteMessage: (id: number) => void;
   markAllRead: (conversationId: number) => void;
@@ -101,6 +103,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const sendVoice = useCallback((conversationId: number, audioUrl: string, durationSec: number) =>
     push({ conversationId, type: 'voice', content: '', audioUrl, durationSec }), [push]);
 
+  const sendCard = useCallback((conversationId: number, card: DuelCard, fromUserId?: number) => {
+    if (!me) return;
+    const senderId = fromUserId ?? me.id;
+    setMessages((l) => [...l, { id: nextId.current++, conversationId, senderId, type: "duel", content: card.title, card, sentAt: new Date().toISOString(), status: "read" }]);
+    if (senderId === me.id) markRead(conversationId, me.id);
+  }, [me]);
+
   const editMessage = useCallback((id: number, content: string) =>
     setMessages((l) => l.map((x) => (x.id === id ? { ...x, content, editedAt: new Date().toISOString() } : x))), []);
   const deleteMessage = useCallback((id: number) => setMessages((l) => l.filter((x) => x.id !== id)), []);
@@ -127,9 +136,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<Store>(() => ({
     me, users, conversations, messages, authorizedEmails, typing, login, logout, isAuthorized, register, resetPassword,
-    sendMessage, sendVoice, editMessage, deleteMessage, markAllRead, openPrivate, addAuthorizedEmail, removeAuthorizedEmail,
+    sendMessage, sendVoice, sendCard, editMessage, deleteMessage, markAllRead, openPrivate, addAuthorizedEmail, removeAuthorizedEmail,
   }), [me, users, conversations, messages, authorizedEmails, typing, login, logout, isAuthorized, register, resetPassword,
-    sendMessage, sendVoice, editMessage, deleteMessage, markAllRead, openPrivate, addAuthorizedEmail, removeAuthorizedEmail]);
+    sendMessage, sendVoice, sendCard, editMessage, deleteMessage, markAllRead, openPrivate, addAuthorizedEmail, removeAuthorizedEmail]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
@@ -149,11 +158,11 @@ export const initialsOf = (name: string) => {
 export const userInitials = (u?: User) => (u ? `${u.firstName[0] ?? ''}${u.lastName[0] ?? ''}`.toUpperCase() : '?');
 
 /** Sections visibles selon le rôle – identique à NavigationViewModel (Flutter). */
-export type Section = 'messages' | 'members' | 'broadcast' | 'management';
+export type Section = 'messages' | 'members' | 'play' | 'broadcast' | 'management';
 export function sectionsFor(role: User['role']): Section[] {
-  if (role === 'SuperAdmin') return ['messages', 'members', 'broadcast', 'management'];
-  if (role === 'Admin') return ['messages', 'members', 'broadcast'];
-  return ['messages', 'members'];
+  if (role === 'SuperAdmin') return ['messages', 'members', 'play', 'broadcast', 'management'];
+  if (role === 'Admin') return ['messages', 'members', 'play', 'broadcast'];
+  return ['messages', 'members', 'play'];
 }
 
 const sameDay = (a: Date, b: Date) => a.toDateString() === b.toDateString();
